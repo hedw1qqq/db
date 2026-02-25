@@ -1,0 +1,57 @@
+@startuml
+left to right direction
+
+enum user_role {
+  guest
+  host
+  both
+}
+
+entity users {
+  +id : serial <<PK>>
+  --
+  name : varchar(255)
+  email : varchar(255) <<UNIQUE>>
+  password_hash : varchar(255)
+  phone : varchar(20) <<UNIQUE>>
+  role : user_role
+}
+
+entity estate {
+  +id : serial <<PK>>
+  --
+  host_id : int <<FK>>
+  name : varchar(255)
+  description : text
+  location : varchar(255)
+  price_per_night : numeric(10,2)
+  available_from : date
+  available_to : date
+  created_at : timestamp
+}
+
+entity bookings {
+  +id : serial <<PK>>
+  --
+  estate_id : int <<FK>>
+  guest_id : int <<FK>>
+  start_date : date
+  end_date : date
+  total_price : numeric(10,2)
+  created_at : timestamp
+}
+
+entity reviews {
+  +id : serial <<PK>>
+  --
+  booking_id : int <<FK>>
+  rating : int
+  comment : text
+  created_at : timestamp
+}
+
+users ||--o{ estate : hosts
+users ||--o{ bookings : makes
+estate ||--o{ bookings : contains
+bookings ||--o{ reviews : has
+@enduml
