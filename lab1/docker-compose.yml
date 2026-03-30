@@ -12,6 +12,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ../lab2/create_insert/01_ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
       - ../lab2/create_insert/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ../lab3/01_routines_triggers.sql:/docker-entrypoint-initdb.d/03_routines_triggers.sql:ro
 
 
 volumes:
