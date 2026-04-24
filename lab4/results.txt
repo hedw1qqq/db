@@ -1,0 +1,482 @@
+Pager usage is off.
+Timing is on.
+=============================
+ЛР4: исследование индексов
+=============================
+
+[Сводка по объему данных]
+ table_name | rows_count 
+------------+------------
+ bookings   |    1200006
+ estate     |      50005
+ reviews    |     120004
+ users      |      60008
+(4 rows)
+
+Time: 45.043 ms
+
+[Очистка дополнительных индексов]
+DROP INDEX
+Time: 0.255 ms
+DROP INDEX
+Time: 0.140 ms
+DROP INDEX
+Time: 0.154 ms
+DROP INDEX
+Time: 0.174 ms
+DROP INDEX
+Time: 1.904 ms
+DROP INDEX
+Time: 0.976 ms
+DROP INDEX
+Time: 0.124 ms
+DROP INDEX
+Time: 0.102 ms
+
+[Сценарий 1] Сложный фильтр
+Гипотеза: составной B-tree индекс по (estate_id, created_at) сократит чтение для условия "точное совпадение + диапазон".
+                                                                                                                           QUERY PLAN                                                                                                                           
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..22251.16 rows=1 width=22) (actual time=21.249..42.769 rows=10 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=2258 read=7743
+   ->  Parallel Seq Scan on bookings b  (cost=0.00..21251.06 rows=1 width=22) (actual time=15.519..38.860 rows=3 loops=3)
+         Filter: ((created_at >= '2024-04-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-08-01 00:00:00'::timestamp without time zone) AND (total_price >= '30000'::numeric) AND (total_price <= '35000'::numeric) AND (estate_id = 12020))
+         Rows Removed by Filter: 399999
+         Buffers: shared hit=2258 read=7743
+ Planning:
+   Buffers: shared hit=34
+ Planning Time: 0.126 ms
+ Execution Time: 42.783 ms
+(12 rows)
+
+Time: 43.556 ms
+CREATE INDEX
+Time: 415.941 ms
+ANALYZE
+Time: 82.627 ms
+            index_name            | index_size 
+----------------------------------+------------
+ idx_lab4_bookings_estate_created | 36 MB
+(1 row)
+
+Time: 0.317 ms
+                                                                                       QUERY PLAN                                                                                       
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on bookings b  (cost=4.57..47.72 rows=1 width=22) (actual time=0.090..0.106 rows=10 loops=1)
+   Recheck Cond: ((estate_id = 12020) AND (created_at >= '2024-04-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-08-01 00:00:00'::timestamp without time zone))
+   Filter: ((total_price >= '30000'::numeric) AND (total_price <= '35000'::numeric))
+   Heap Blocks: exact=10
+   Buffers: shared hit=9 read=4
+   ->  Bitmap Index Scan on idx_lab4_bookings_estate_created  (cost=0.00..4.57 rows=11 width=0) (actual time=0.026..0.027 rows=10 loops=1)
+         Index Cond: ((estate_id = 12020) AND (created_at >= '2024-04-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-08-01 00:00:00'::timestamp without time zone))
+         Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=17 read=1
+ Planning Time: 0.158 ms
+ Execution Time: 0.121 ms
+(12 rows)
+
+Time: 0.527 ms
+DROP INDEX
+Time: 6.530 ms
+
+[Сценарий 2] ORDER BY + LIMIT
+Гипотеза: индекс по created_at DESC позволит выбрать верхние строки без полного сканирования и сортировки.
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=21949.26..21955.09 rows=50 width=20) (actual time=41.967..43.581 rows=50 loops=1)
+   Buffers: shared hit=2523 read=7550
+   ->  Gather Merge  (cost=21949.26..54951.90 rows=282860 width=20) (actual time=41.966..43.577 rows=50 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2523 read=7550
+         ->  Sort  (cost=20949.23..21302.81 rows=141430 width=20) (actual time=39.454..39.455 rows=42 loops=3)
+               Sort Key: created_at DESC
+               Sort Method: top-N heapsort  Memory: 30kB
+               Buffers: shared hit=2523 read=7550
+               Worker 0:  Sort Method: top-N heapsort  Memory: 31kB
+               Worker 1:  Sort Method: top-N heapsort  Memory: 30kB
+               ->  Parallel Seq Scan on bookings b  (cost=0.00..16251.03 rows=141430 width=20) (actual time=10.816..30.672 rows=113494 loops=3)
+                     Filter: (created_at >= '2024-07-01 00:00:00'::timestamp without time zone)
+                     Rows Removed by Filter: 286508
+                     Buffers: shared hit=2451 read=7550
+ Planning:
+   Buffers: shared hit=16
+ Planning Time: 0.085 ms
+ Execution Time: 43.595 ms
+(20 rows)
+
+Time: 44.016 ms
+CREATE INDEX
+Time: 270.437 ms
+ANALYZE
+Time: 72.421 ms
+           index_name           | index_size 
+--------------------------------+------------
+ idx_lab4_bookings_created_desc | 11 MB
+(1 row)
+
+Time: 0.219 ms
+                                                                         QUERY PLAN                                                                         
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.43..1.99 rows=50 width=20) (actual time=0.048..0.089 rows=50 loops=1)
+   Buffers: shared hit=45 read=3
+   ->  Index Scan using idx_lab4_bookings_created_desc on bookings b  (cost=0.43..10623.26 rows=339092 width=20) (actual time=0.047..0.086 rows=50 loops=1)
+         Index Cond: (created_at >= '2024-07-01 00:00:00'::timestamp without time zone)
+         Buffers: shared hit=45 read=3
+ Planning:
+   Buffers: shared hit=14 read=1
+ Planning Time: 0.153 ms
+ Execution Time: 0.098 ms
+(9 rows)
+
+Time: 0.428 ms
+DROP INDEX
+Time: 2.752 ms
+
+[Сценарий 3] Альтернативные варианты индексирования
+Гипотеза: порядок полей в составном индексе критичен; (guest_id, created_at) лучше, чем (created_at, guest_id).
+                                                                                    QUERY PLAN                                                                                     
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..19754.04 rows=30 width=22) (actual time=12.086..36.141 rows=29 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=2643 read=7358
+   ->  Parallel Seq Scan on bookings b  (cost=0.00..18751.04 rows=12 width=22) (actual time=9.458..31.542 rows=10 loops=3)
+         Filter: ((created_at >= '2024-03-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-10-01 00:00:00'::timestamp without time zone) AND (guest_id = 24567))
+         Rows Removed by Filter: 399992
+         Buffers: shared hit=2643 read=7358
+ Planning:
+   Buffers: shared hit=8
+ Planning Time: 0.063 ms
+ Execution Time: 36.154 ms
+(12 rows)
+
+Time: 36.497 ms
+CREATE INDEX
+Time: 462.211 ms
+ANALYZE
+Time: 78.904 ms
+           index_name            | index_size 
+---------------------------------+------------
+ idx_lab4_bookings_created_guest | 36 MB
+(1 row)
+
+Time: 0.233 ms
+                                                                                    QUERY PLAN                                                                                     
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..19754.04 rows=30 width=22) (actual time=12.002..38.284 rows=29 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=2835 read=7166
+   ->  Parallel Seq Scan on bookings b  (cost=0.00..18751.04 rows=12 width=22) (actual time=10.283..34.070 rows=10 loops=3)
+         Filter: ((created_at >= '2024-03-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-10-01 00:00:00'::timestamp without time zone) AND (guest_id = 24567))
+         Rows Removed by Filter: 399992
+         Buffers: shared hit=2835 read=7166
+ Planning:
+   Buffers: shared hit=18 read=4
+ Planning Time: 0.125 ms
+ Execution Time: 38.298 ms
+(12 rows)
+
+Time: 38.644 ms
+DROP INDEX
+Time: 5.806 ms
+CREATE INDEX
+Time: 500.155 ms
+ANALYZE
+Time: 77.120 ms
+           index_name            | index_size 
+---------------------------------+------------
+ idx_lab4_bookings_guest_created | 36 MB
+(1 row)
+
+Time: 0.229 ms
+                                                                                      QUERY PLAN                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on bookings b  (cost=4.81..120.41 rows=30 width=22) (actual time=0.063..0.087 rows=29 loops=1)
+   Recheck Cond: ((guest_id = 24567) AND (created_at >= '2024-03-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-10-01 00:00:00'::timestamp without time zone))
+   Heap Blocks: exact=29
+   Buffers: shared hit=29 read=3
+   ->  Bitmap Index Scan on idx_lab4_bookings_guest_created  (cost=0.00..4.80 rows=30 width=0) (actual time=0.055..0.055 rows=29 loops=1)
+         Index Cond: ((guest_id = 24567) AND (created_at >= '2024-03-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-10-01 00:00:00'::timestamp without time zone))
+         Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=17 read=1
+ Planning Time: 0.183 ms
+ Execution Time: 0.100 ms
+(11 rows)
+
+Time: 0.503 ms
+DROP INDEX
+Time: 5.727 ms
+
+[Сценарий 4] Текстовый поиск
+Гипотеза: GIN + pg_trgm ускорит поиск по подстроке в description.
+                                                  QUERY PLAN                                                  
+--------------------------------------------------------------------------------------------------------------
+ Seq Scan on estate e  (cost=0.00..2895.06 rows=5031 width=45) (actual time=0.064..110.605 rows=5000 loops=1)
+   Filter: (description ~~* '%панорамный вид на море%'::text)
+   Rows Removed by Filter: 45005
+   Buffers: shared hit=2270
+ Planning:
+   Buffers: shared hit=37
+ Planning Time: 0.979 ms
+ Execution Time: 110.811 ms
+(8 rows)
+
+Time: 112.082 ms
+CREATE INDEX
+Time: 1625.788 ms (00:01.626)
+ANALYZE
+Time: 177.074 ms
+            index_name            | index_size 
+----------------------------------+------------
+ idx_lab4_estate_description_trgm | 11 MB
+(1 row)
+
+Time: 0.268 ms
+                                                                   QUERY PLAN                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on estate e  (cost=341.60..2674.15 rows=5004 width=45) (actual time=3.202..13.575 rows=5000 loops=1)
+   Recheck Cond: (description ~~* '%панорамный вид на море%'::text)
+   Heap Blocks: exact=2270
+   Buffers: shared hit=2422
+   ->  Bitmap Index Scan on idx_lab4_estate_description_trgm  (cost=0.00..340.34 rows=5004 width=0) (actual time=3.033..3.034 rows=5000 loops=1)
+         Index Cond: (description ~~* '%панорамный вид на море%'::text)
+         Buffers: shared hit=152
+ Planning:
+   Buffers: shared hit=23
+ Planning Time: 0.253 ms
+ Execution Time: 13.710 ms
+(11 rows)
+
+Time: 14.186 ms
+DROP INDEX
+Time: 2.968 ms
+
+[Сценарий 5] JOIN нескольких таблиц
+Гипотеза: для небольшого набора объектов индекс bookings(estate_id, created_at) переведет соединение в Nested Loop с точечным доступом по броням.
+                                                                                                  QUERY PLAN                                                                                                  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1015.27..20304.31 rows=94 width=78) (actual time=16.375..47.708 rows=91 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=3422 read=6974
+   ->  Nested Loop  (cost=15.27..19294.91 rows=39 width=78) (actual time=12.727..43.520 rows=30 loops=3)
+         Buffers: shared hit=3422 read=6974
+         ->  Hash Join  (cost=14.98..19282.59 rows=39 width=63) (actual time=12.702..43.380 rows=30 loops=3)
+               Hash Cond: (b.estate_id = e.id)
+               Buffers: shared hit=3147 read=6974
+               ->  Parallel Seq Scan on bookings b  (cost=0.00..18751.04 rows=196769 width=26) (actual time=11.469..36.260 rows=155596 loops=3)
+                     Filter: ((created_at >= '2024-05-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-09-01 00:00:00'::timestamp without time zone) AND (total_price >= '18000'::numeric))
+                     Rows Removed by Filter: 244406
+                     Buffers: shared hit=3027 read=6974
+               ->  Hash  (cost=14.86..14.86 rows=10 width=45) (actual time=0.064..0.064 rows=10 loops=3)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=26
+                     ->  Index Scan using estate_pkey on estate e  (cost=0.29..14.86 rows=10 width=45) (actual time=0.030..0.055 rows=10 loops=3)
+                           Index Cond: ((id >= 12000) AND (id <= 12100))
+                           Filter: ((location)::text = 'Казань'::text)
+                           Rows Removed by Filter: 91
+                           Buffers: shared hit=26
+         ->  Index Scan using users_pkey on users u  (cost=0.29..0.32 rows=1 width=23) (actual time=0.004..0.004 rows=1 loops=91)
+               Index Cond: (id = b.guest_id)
+               Buffers: shared hit=275
+ Planning:
+   Buffers: shared hit=70
+ Planning Time: 0.333 ms
+ Execution Time: 47.739 ms
+(28 rows)
+
+Time: 48.572 ms
+CREATE INDEX
+Time: 485.041 ms
+ANALYZE
+Time: 75.011 ms
+              index_name               | pg_size_pretty 
+---------------------------------------+----------------
+ idx_lab4_bookings_estate_created_join | 36 MB
+(1 row)
+
+Time: 0.219 ms
+                                                                                            QUERY PLAN                                                                                             
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=5.15..522.79 rows=95 width=78) (actual time=0.035..0.376 rows=91 loops=1)
+   Buffers: shared hit=416 read=10
+   ->  Nested Loop  (cost=4.86..492.79 rows=95 width=63) (actual time=0.029..0.237 rows=91 loops=1)
+         Buffers: shared hit=143 read=10
+         ->  Index Scan using estate_pkey on estate e  (cost=0.29..14.86 rows=10 width=45) (actual time=0.011..0.042 rows=10 loops=1)
+               Index Cond: ((id >= 12000) AND (id <= 12100))
+               Filter: ((location)::text = 'Казань'::text)
+               Rows Removed by Filter: 91
+               Buffers: shared hit=8
+         ->  Bitmap Heap Scan on bookings b  (cost=4.57..47.69 rows=10 width=26) (actual time=0.008..0.017 rows=9 loops=10)
+               Recheck Cond: ((e.id = estate_id) AND (created_at >= '2024-05-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-09-01 00:00:00'::timestamp without time zone))
+               Filter: (total_price >= '18000'::numeric)
+               Rows Removed by Filter: 2
+               Heap Blocks: exact=114
+               Buffers: shared hit=135 read=10
+               ->  Bitmap Index Scan on idx_lab4_bookings_estate_created_join  (cost=0.00..4.57 rows=11 width=0) (actual time=0.005..0.005 rows=11 loops=10)
+                     Index Cond: ((estate_id = e.id) AND (created_at >= '2024-05-01 00:00:00'::timestamp without time zone) AND (created_at < '2024-09-01 00:00:00'::timestamp without time zone))
+                     Buffers: shared hit=21 read=10
+   ->  Index Scan using users_pkey on users u  (cost=0.29..0.32 rows=1 width=23) (actual time=0.001..0.001 rows=1 loops=91)
+         Index Cond: (id = b.guest_id)
+         Buffers: shared hit=273
+ Planning:
+   Buffers: shared hit=29 read=6
+ Planning Time: 0.307 ms
+ Execution Time: 0.400 ms
+(25 rows)
+
+Time: 0.984 ms
+DROP INDEX
+Time: 5.762 ms
+
+[Сценарий 6] Негативный сценарий
+Гипотеза: при выборе почти всей таблицы индекс по created_at не даст заметной пользы, и планировщик сохранит Seq Scan.
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=18466.71..18466.72 rows=1 width=32) (actual time=58.327..60.212 rows=1 loops=1)
+   Buffers: shared hit=3219 read=6782
+   ->  Gather  (cost=18466.48..18466.69 rows=2 width=32) (actual time=58.255..60.203 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=3219 read=6782
+         ->  Partial Aggregate  (cost=17466.48..17466.49 rows=1 width=32) (actual time=55.801..55.802 rows=1 loops=3)
+               Buffers: shared hit=3219 read=6782
+               ->  Parallel Seq Scan on bookings b  (cost=0.00..16251.03 rows=486180 width=6) (actual time=0.012..30.063 rows=389526 loops=3)
+                     Filter: (created_at >= '2024-01-01 00:00:00'::timestamp without time zone)
+                     Rows Removed by Filter: 10476
+                     Buffers: shared hit=3219 read=6782
+ Planning:
+   Buffers: shared hit=23
+ Planning Time: 0.106 ms
+ Execution Time: 60.233 ms
+(16 rows)
+
+Time: 60.703 ms
+CREATE INDEX
+Time: 286.937 ms
+ANALYZE
+Time: 75.246 ms
+           index_name           | index_size 
+--------------------------------+------------
+ idx_lab4_bookings_created_wide | 11 MB
+(1 row)
+
+Time: 0.196 ms
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=18469.59..18469.60 rows=1 width=32) (actual time=58.800..60.447 rows=1 loops=1)
+   Buffers: shared hit=3411 read=6590
+   ->  Gather  (cost=18469.36..18469.57 rows=2 width=32) (actual time=58.709..60.438 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=3411 read=6590
+         ->  Partial Aggregate  (cost=17469.36..17469.37 rows=1 width=32) (actual time=56.394..56.394 rows=1 loops=3)
+               Buffers: shared hit=3411 read=6590
+               ->  Parallel Seq Scan on bookings b  (cost=0.00..16251.03 rows=487332 width=6) (actual time=0.013..30.425 rows=389526 loops=3)
+                     Filter: (created_at >= '2024-01-01 00:00:00'::timestamp without time zone)
+                     Rows Removed by Filter: 10476
+                     Buffers: shared hit=3411 read=6590
+ Planning:
+   Buffers: shared hit=8 read=1
+ Planning Time: 0.075 ms
+ Execution Time: 60.463 ms
+(16 rows)
+
+Time: 60.740 ms
+DROP INDEX
+Time: 2.337 ms
+
+[Дополнительное требование] Влияние индексов на INSERT/UPDATE
+Для чистоты измерения используем estate: без триггеров из ЛР3, но с индексами из сценариев 4 и 5.
+DROP INDEX
+Time: 0.174 ms
+DROP INDEX
+Time: 0.117 ms
+
+INSERT без дополнительных индексов
+BEGIN
+Time: 0.082 ms
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Insert on estate  (cost=0.00..165.00 rows=0 width=0) (actual time=6.836..6.836 rows=0 loops=1)
+   Buffers: shared hit=15346 dirtied=68 written=68
+   ->  Function Scan on generate_series gs  (cost=0.00..165.00 rows=3000 width=1104) (actual time=0.183..1.981 rows=3000 loops=1)
+         Buffers: shared hit=3012
+ Planning:
+   Buffers: shared hit=21
+ Planning Time: 0.121 ms
+ Trigger for constraint estate_host_id_fkey: time=12.914 calls=3000
+ Execution Time: 19.935 ms
+(9 rows)
+
+Time: 20.554 ms
+ROLLBACK
+Time: 0.595 ms
+
+UPDATE без дополнительных индексов
+BEGIN
+Time: 0.105 ms
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ Update on estate  (cost=0.29..258.66 rows=0 width=0) (actual time=9.969..9.969 rows=0 loops=1)
+   Buffers: shared hit=21553 dirtied=150 written=150
+   ->  Index Scan using estate_pkey on estate  (cost=0.29..258.66 rows=3019 width=38) (actual time=0.021..1.249 rows=3001 loops=1)
+         Index Cond: ((id >= 20000) AND (id <= 23000))
+         Buffers: shared hit=159
+ Planning Time: 0.057 ms
+ Execution Time: 10.034 ms
+(7 rows)
+
+Time: 10.349 ms
+ROLLBACK
+Time: 0.120 ms
+CREATE INDEX
+Time: 29.071 ms
+CREATE INDEX
+Time: 1604.981 ms (00:01.605)
+ANALYZE
+Time: 168.134 ms
+
+INSERT при наличии индексов
+BEGIN
+Time: 0.096 ms
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Insert on estate  (cost=0.00..165.00 rows=0 width=0) (actual time=60.842..60.842 rows=0 loops=1)
+   Buffers: shared hit=24226 read=9 dirtied=622 written=614
+   ->  Function Scan on generate_series gs  (cost=0.00..165.00 rows=3000 width=1104) (actual time=0.169..2.519 rows=3000 loops=1)
+         Buffers: shared hit=3000
+ Planning Time: 0.064 ms
+ Trigger for constraint estate_host_id_fkey: time=11.552 calls=3000
+ Execution Time: 72.557 ms
+(7 rows)
+
+Time: 72.916 ms
+ROLLBACK
+Time: 0.144 ms
+
+UPDATE при наличии индексов
+BEGIN
+Time: 0.102 ms
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ Update on estate  (cost=0.29..275.51 rows=0 width=0) (actual time=205.568..205.569 rows=0 loops=1)
+   Buffers: shared hit=58411 read=12 dirtied=317 written=305
+   ->  Index Scan using estate_pkey on estate  (cost=0.29..275.51 rows=3074 width=38) (actual time=0.023..1.928 rows=3001 loops=1)
+         Index Cond: ((id >= 20000) AND (id <= 23000))
+         Buffers: shared hit=6037
+ Planning:
+   Buffers: shared hit=10
+ Planning Time: 0.350 ms
+ Execution Time: 205.625 ms
+(9 rows)
+
+Time: 206.218 ms
+ROLLBACK
+Time: 0.144 ms

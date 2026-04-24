@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: lab4-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: lab4
+    ports:
+      - "5434:5432"
+    volumes:
+      - lab4_pgdata:/var/lib/postgresql/data
+      - ./00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
+      - ../lab2/create_insert/01_ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
+      - ../lab2/create_insert/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./01_bulk_seed.sql:/docker-entrypoint-initdb.d/03_bulk_seed.sql:ro
+      - ../lab3/01_routines_triggers.sql:/docker-entrypoint-initdb.d/04_routines_triggers.sql:ro
+      - ./02_postload.sql:/docker-entrypoint-initdb.d/05_postload.sql:ro
+      - ./:/workspace/lab4:ro
+
+volumes:
+  lab4_pgdata:
