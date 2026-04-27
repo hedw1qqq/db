@@ -33,14 +33,6 @@
 5. повторный запуск;
 6. сравнение времени и плана.
 
-Источник по выбору стратегий индексирования:
-
-- PostgreSQL 16, Index Types: https://www.postgresql.org/docs/16/indexes-types.html
-- PostgreSQL 16, Multicolumn Indexes: https://www.postgresql.org/docs/16/indexes-multicolumn.html
-- PostgreSQL 16, Indexes and ORDER BY: https://www.postgresql.org/docs/16/indexes-ordering.html
-- PostgreSQL 16, Using EXPLAIN: https://www.postgresql.org/docs/16/using-explain.html
-- PostgreSQL 16, `pg_trgm`: https://www.postgresql.org/docs/16/pgtrgm.html
-
 ## Сценарий 1. Сложный фильтр
 
 SQL-запрос:
@@ -55,7 +47,7 @@ WHERE b.estate_id = 12020
 ```
 
 Гипотеза:
-составной B-tree индекс по `(estate_id, created_at)` должен резко сократить объем читаемых данных, потому что запрос использует точное равенство по `estate_id` и диапазон по `created_at`.
+составной индекс по `(estate_id, created_at)` должен резко сократить объем читаемых данных, потому что запрос использует точное равенство по `estate_id` и диапазон по `created_at`.
 
 Индекс:
 

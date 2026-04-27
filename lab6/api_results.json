@@ -1,0 +1,358 @@
+{
+  "health": {
+    "status": "ok"
+  },
+  "users_list": {
+    "page": 1,
+    "limit": 2,
+    "total": 60011,
+    "items": [
+      {
+        "id": 1,
+        "name": "Иван Петров",
+        "email": "ivan.petrov@example.com",
+        "phone": "+79000000001",
+        "role": "both"
+      },
+      {
+        "id": 2,
+        "name": "Анна Смирнова",
+        "email": "anna.smirnova@example.com",
+        "phone": "+79000000002",
+        "role": "host"
+      }
+    ]
+  },
+  "user_created": {
+    "id": 60022,
+    "name": "Lab6 API User",
+    "email": "lab6_api_user@example.com",
+    "phone": "+79029999991",
+    "role": "guest"
+  },
+  "user_updated": {
+    "id": 60022,
+    "name": "Lab6 API User Updated",
+    "email": "lab6_api_user@example.com",
+    "phone": "+79029999991",
+    "role": "both"
+  },
+  "estates_list": {
+    "page": 1,
+    "limit": 2,
+    "total": 5,
+    "items": [
+      {
+        "id": 597,
+        "host_id": 601,
+        "name": "Квартира #592",
+        "description": "Просторное жилье рядом с историческим центром. два санузла и детская зона. Быстрый Wi-Fi, полноценная кухня и стандартный набор для проживания",
+        "location": "Казань",
+        "price_per_night": 6340.0,
+        "available_from": "2024-01-01",
+        "available_to": "2028-12-31",
+        "created_at": "2023-12-01T17:52:00"
+      },
+      {
+        "id": 701,
+        "host_id": 601,
+        "name": "Lab6 Demo Estate",
+        "description": "Dedicated estate for REST API checks",
+        "location": "Moscow",
+        "price_per_night": 6800.0,
+        "available_from": "2026-07-01",
+        "available_to": "2026-12-31",
+        "created_at": "2026-06-01T12:00:00"
+      }
+    ]
+  },
+  "estate_created": {
+    "id": 50019,
+    "host_id": 601,
+    "name": "Lab6 API Estate",
+    "description": "Estate created during API smoke test",
+    "location": "Yaroslavl",
+    "price_per_night": 5100.0,
+    "available_from": "2026-08-01",
+    "available_to": "2026-12-31",
+    "created_at": "2026-04-27T17:37:56.020285"
+  },
+  "estate_updated": {
+    "id": 50019,
+    "host_id": 601,
+    "name": "Lab6 API Estate",
+    "description": "Estate created during API smoke test",
+    "location": "Kostroma",
+    "price_per_night": 5100.0,
+    "available_from": "2026-08-01",
+    "available_to": "2026-12-31",
+    "created_at": "2026-04-27T17:37:56.020285"
+  },
+  "booking_get": {
+    "id": 801,
+    "estate_id": 701,
+    "guest_id": 602,
+    "start_date": "2026-07-05",
+    "end_date": "2026-07-07",
+    "total_price": 13600.0,
+    "created_at": "2026-06-10T14:00:00"
+  },
+  "booking_created": {
+    "id": 1200039,
+    "estate_id": 701,
+    "guest_id": 603,
+    "start_date": "2026-07-10",
+    "end_date": "2026-07-12",
+    "total_price": 13600.0,
+    "created_at": "2026-04-27T17:37:56.047368"
+  },
+  "booking_updated": {
+    "id": 1200039,
+    "estate_id": 701,
+    "guest_id": 603,
+    "start_date": "2026-07-12",
+    "end_date": "2026-07-14",
+    "total_price": 13600.0,
+    "created_at": "2026-04-27T17:37:56.047368"
+  },
+  "view_booking_details": {
+    "page": 1,
+    "limit": 2,
+    "total": 26,
+    "items": [
+      {
+        "booking_id": 703,
+        "start_date": "2024-01-11",
+        "end_date": "2024-01-14",
+        "total_price": 56460.0,
+        "guest_id": 31841,
+        "guest_name": "Гость #11832",
+        "host_id": 601,
+        "host_name": "Lab6 Host",
+        "estate_id": 701,
+        "estate_name": "Lab6 Demo Estate",
+        "location": "Moscow",
+        "rating": null,
+        "comment": null,
+        "review_created_at": null
+      },
+      {
+        "booking_id": 801,
+        "start_date": "2026-07-05",
+        "end_date": "2026-07-07",
+        "total_price": 13600.0,
+        "guest_id": 602,
+        "guest_name": "Lab6 Guest",
+        "host_id": 601,
+        "host_name": "Lab6 Host",
+        "estate_id": 701,
+        "estate_name": "Lab6 Demo Estate",
+        "location": "Moscow",
+        "rating": 5,
+        "comment": "Seed review for API demo",
+        "review_created_at": "2026-07-08T09:30:00"
+      }
+    ]
+  },
+  "function_amount": {
+    "amount": 20400.0
+  },
+  "function_active": {
+    "active": true
+  },
+  "procedure_booking": {
+    "id": 1200040,
+    "estate_id": 701,
+    "guest_id": 602,
+    "start_date": "2026-07-24",
+    "end_date": "2026-07-27",
+    "total_price": 20400.0,
+    "created_at": "2026-04-27T17:37:56.222318"
+  },
+  "procedure_review": {
+    "id": 120019,
+    "booking_id": 1200040,
+    "rating": 5,
+    "comment": "Procedure review from smoke test",
+    "created_at": "2026-04-27T17:37:56.291106"
+  },
+  "view_host_revenue": {
+    "page": 1,
+    "limit": 3,
+    "total": 3,
+    "items": [
+      {
+        "host_id": 601,
+        "host_name": "Lab6 Host",
+        "estates_total": 6,
+        "bookings_total": 123,
+        "revenue_total": 5968400.0,
+        "avg_booking_amount": 48523.577235772354,
+        "last_booking_end_date": "2026-07-27"
+      },
+      {
+        "host_id": 603,
+        "host_name": "Lab6 Both",
+        "estates_total": 3,
+        "bookings_total": 72,
+        "revenue_total": 4224960.0,
+        "avg_booking_amount": 58680.0,
+        "last_booking_end_date": "2024-09-29"
+      },
+      {
+        "host_id": 60022,
+        "host_name": "Lab6 API User Updated",
+        "estates_total": 0,
+        "bookings_total": 0,
+        "revenue_total": 0.0,
+        "avg_booking_amount": 0.0,
+        "last_booking_end_date": null
+      }
+    ]
+  },
+  "report_top_hosts": [
+    {
+      "host_id": 148,
+      "host_name": "Хост #139",
+      "revenue_total": 7248960.0,
+      "bookings_total": 72
+    },
+    {
+      "host_id": 288,
+      "host_name": "Хост #279",
+      "revenue_total": 7248960.0,
+      "bookings_total": 72
+    },
+    {
+      "host_id": 428,
+      "host_name": "Хост #419",
+      "revenue_total": 7248960.0,
+      "bookings_total": 72
+    }
+  ],
+  "report_locations": [
+    {
+      "location": "Калининград",
+      "bookings_total": 120000,
+      "revenue_total": 8191526400.0
+    },
+    {
+      "location": "Екатеринбург",
+      "bookings_total": 119999,
+      "revenue_total": 7759430340.0
+    },
+    {
+      "location": "Владивосток",
+      "bookings_total": 120000,
+      "revenue_total": 6754272000.0
+    },
+    {
+      "location": "Сочи",
+      "bookings_total": 120001,
+      "revenue_total": 6394299900.0
+    },
+    {
+      "location": "Самара",
+      "bookings_total": 119952,
+      "revenue_total": 5343102720.0
+    },
+    {
+      "location": "Казань",
+      "bookings_total": 120001,
+      "revenue_total": 5057832000.0
+    },
+    {
+      "location": "Нижний Новгород",
+      "bookings_total": 119952,
+      "revenue_total": 3964144320.0
+    },
+    {
+      "location": "Санкт-Петербург",
+      "bookings_total": 120002,
+      "revenue_total": 3750202400.0
+    },
+    {
+      "location": "Новосибирск",
+      "bookings_total": 119999,
+      "revenue_total": 2615300200.0
+    },
+    {
+      "location": "Москва",
+      "bookings_total": 120002,
+      "revenue_total": 2471445000.0
+    },
+    {
+      "location": "Tver",
+      "bookings_total": 24,
+      "revenue_total": 1818240.0
+    },
+    {
+      "location": "Moscow",
+      "bookings_total": 27,
+      "revenue_total": 1402640.0
+    },
+    {
+      "location": "Nizhny Novgorod",
+      "bookings_total": 26,
+      "revenue_total": 920640.0
+    },
+    {
+      "location": "Kaliningrad",
+      "bookings_total": 27,
+      "revenue_total": 697440.0
+    },
+    {
+      "location": "Tula",
+      "bookings_total": 1,
+      "revenue_total": 18300.0
+    },
+    {
+      "location": "Smolensk",
+      "bookings_total": 1,
+      "revenue_total": 15600.0
+    },
+    {
+      "location": "Kostroma",
+      "bookings_total": 0,
+      "revenue_total": 0.0
+    }
+  ],
+  "docs_status": 200,
+  "openapi_title": "Lab 6 Rental API",
+  "procedure_booking_deleted": {
+    "id": 1200040,
+    "estate_id": 701,
+    "guest_id": 602,
+    "start_date": "2026-07-24",
+    "end_date": "2026-07-27",
+    "total_price": 20400.0,
+    "created_at": "2026-04-27T17:37:56.222318"
+  },
+  "booking_deleted": {
+    "id": 1200039,
+    "estate_id": 701,
+    "guest_id": 603,
+    "start_date": "2026-07-12",
+    "end_date": "2026-07-14",
+    "total_price": 13600.0,
+    "created_at": "2026-04-27T17:37:56.047368"
+  },
+  "estate_deleted": {
+    "id": 50019,
+    "host_id": 601,
+    "name": "Lab6 API Estate",
+    "description": "Estate created during API smoke test",
+    "location": "Kostroma",
+    "price_per_night": 5100.0,
+    "available_from": "2026-08-01",
+    "available_to": "2026-12-31",
+    "created_at": "2026-04-27T17:37:56.020285"
+  },
+  "user_deleted": {
+    "id": 60022,
+    "name": "Lab6 API User Updated",
+    "email": "lab6_api_user@example.com",
+    "phone": "+79029999991",
+    "role": "both"
+  }
+}

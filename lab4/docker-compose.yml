@@ -13,10 +13,17 @@ services:
       - ./00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
       - ../lab2/create_insert/01_ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
       - ../lab2/create_insert/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
-      - ./01_bulk_seed.sql:/docker-entrypoint-initdb.d/03_bulk_seed.sql:ro
-      - ../lab3/01_routines_triggers.sql:/docker-entrypoint-initdb.d/04_routines_triggers.sql:ro
-      - ./02_postload.sql:/docker-entrypoint-initdb.d/05_postload.sql:ro
+      - ../lab2/create_insert/03_dml.sql:/docker-entrypoint-initdb.d/03_dml.sql:ro
+      - ../lab2/selecft/06_views.sql:/docker-entrypoint-initdb.d/04_views.sql:ro
+      - ./01_bulk_seed.sql:/docker-entrypoint-initdb.d/05_bulk_seed.sql:ro
+      - ../lab3/01_routines_triggers.sql:/docker-entrypoint-initdb.d/06_routines_triggers.sql:ro
+      - ../lab5/10_lab5_fixtures.sql:/docker-entrypoint-initdb.d/07_lab5_fixtures.sql:ro
+      - ../lab6/10_lab6_fixtures.sql:/docker-entrypoint-initdb.d/08_lab6_fixtures.sql:ro
+      - ../lab6/11_lab6_api_helpers.sql:/docker-entrypoint-initdb.d/09_lab6_api_helpers.sql:ro
+      - ./02_postload.sql:/docker-entrypoint-initdb.d/10_postload.sql:ro
       - ./:/workspace/lab4:ro
+      - ../lab5:/workspace/lab5:ro
+      - ../lab6:/workspace/lab6:ro
 
 volumes:
   lab4_pgdata:

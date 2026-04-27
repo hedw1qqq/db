@@ -1,0 +1,199 @@
+Pager usage is off.
+Null display is "(null)".
+===========================
+LAB 5: TRANSACTION SCENARIOS
+===========================
+CREATE PROCEDURE
+CREATE FUNCTION
+CREATE PROCEDURE
+CREATE PROCEDURE
+
+[Scenario 1] Booking + review + audit
+-------------------------------------
+CALL
+
+1.1 COMMIT
+BEGIN
+CALL
+COMMIT
+[Проверка 1.1] После COMMIT бронь, отзыв и аудит должны существовать
+ s1_commit_booking_id 
+----------------------
+              1200046
+(1 row)
+
+[Детали 1.1] Итоговая запись в представлении v_booking_details
+ booking_id | estate_id | guest_id | start_date |  end_date  | total_price | rating |         comment          
+------------+-----------+----------+------------+------------+-------------+--------+--------------------------
+    1200046 |       201 |      102 | 2026-07-01 | 2026-07-04 |    14400.00 |      5 | Scenario 1 commit review
+(1 row)
+
+[Детали 1.1] Запись в booking_audit
+ booking_id | action_type | old_total_price | new_total_price 
+------------+-------------+-----------------+-----------------
+    1200046 | INSERT      |          (null) |        14400.00
+(1 row)
+
+ result |                     explanation                      
+--------+------------------------------------------------------
+ PASS   | Бронь сохранена, отзыв сохранен, аудит INSERT создан
+(1 row)
+
+
+1.2 ROLLBACK after error
+BEGIN
+[Ожидаемая ошибка 1.2] rating=7 нарушает ограничение процедуры отзыва
+ROLLBACK
+[Проверка 1.2] После ROLLBACK брони на эту дату остаться не должно
+ s1_rollback_booking_count 
+---------------------------
+                         0
+(1 row)
+
+ result |                   explanation                    
+--------+--------------------------------------------------
+ PASS   | После полного отката бронирование не сохранилось
+(1 row)
+
+
+1.3 SAVEPOINT + partial rollback
+BEGIN
+SAVEPOINT
+[Ожидаемая ошибка 1.3] Невалидный отзыв откатываем только до SAVEPOINT
+ROLLBACK
+CALL
+COMMIT
+[Проверка 1.3] Бронь должна сохраниться, отзыв должен быть исправлен на rating=4
+ booking_id | start_date |  end_date  | total_price | rating |                       comment                       
+------------+------------+------------+-------------+--------+-----------------------------------------------------
+    1200048 | 2026-07-08 | 2026-07-10 |     9600.00 |      4 | Scenario 1 fixed review after rollback to savepoint
+(1 row)
+
+ result |                                explanation                                
+--------+---------------------------------------------------------------------------
+ PASS   | После отката к SAVEPOINT бронь сохранена, отзыв записан со второй попытки
+(1 row)
+
+
+[Scenario 2] New host + estate + first booking
+----------------------------------------------
+CALL
+
+2.1 COMMIT
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+COMMIT
+[Проверка 2.1] После COMMIT должны существовать хост, объект и первое бронирование
+ host_id |              email              | estate_id | location 
+---------+---------------------------------+-----------+----------
+   60026 | lab5_s2_commit_host@example.com |     50024 | Tula
+(1 row)
+
+ result |                       explanation                       
+--------+---------------------------------------------------------
+ PASS   | Новый хост, объект и бронирование успешно зафиксированы
+(1 row)
+
+
+2.2 ROLLBACK after error
+BEGIN
+INSERT 0 1
+[Ожидаемая ошибка 2.2] Объект с перевернутым диапазоном дат должен вызвать ROLLBACK
+ROLLBACK
+[Проверка 2.2] После ROLLBACK новый хост не должен сохраниться
+ s2_rollback_host_count 
+------------------------
+                      0
+(1 row)
+
+ result |                   explanation                   
+--------+-------------------------------------------------
+ PASS   | После полного отката пользователь не сохранился
+(1 row)
+
+
+2.3 SAVEPOINT + partial rollback
+BEGIN
+INSERT 0 1
+SAVEPOINT
+[Ожидаемая ошибка 2.3] Некорректный объект откатываем только до SAVEPOINT
+ROLLBACK
+INSERT 0 1
+INSERT 0 1
+COMMIT
+[Проверка 2.3] После SAVEPOINT должны сохраниться хост, исправленный объект и бронь
+ host_id | estate_id | booking_id 
+---------+-----------+------------
+   60028 |     50027 |    1200050
+(1 row)
+
+ result |                     explanation                      
+--------+------------------------------------------------------
+ PASS   | После частичного отката операция завершилась успешно
+(1 row)
+
+
+[Scenario 3] Reschedule booking + review update
+-----------------------------------------------
+CALL
+
+3.1 COMMIT
+BEGIN
+UPDATE 1
+CALL
+COMMIT
+[Проверка 3.1] После COMMIT бронирование должно быть перенесено, отзыв и аудит обновлены
+ booking_id | start_date |  end_date  | total_price | rating |         comment          
+------------+------------+------------+-------------+--------+--------------------------
+        301 | 2026-07-13 | 2026-07-15 |    12000.00 |      5 | Scenario 3 commit review
+(1 row)
+
+[Детали 3.1] Запись в booking_audit
+ booking_id | action_type | old_total_price | new_total_price 
+------------+-------------+-----------------+-----------------
+        301 | UPDATE      |        12000.00 |        12000.00
+(1 row)
+
+ result |                       explanation                       
+--------+---------------------------------------------------------
+ PASS   | Перенос брони и обновление отзыва успешно зафиксированы
+(1 row)
+
+
+3.2 ROLLBACK after error
+BEGIN
+[Ожидаемая ошибка 3.2] Попытка переноса в занятый интервал должна быть отменена
+ROLLBACK
+[Проверка 3.2] После ROLLBACK состояние брони должно остаться как после шага 3.1
+ booking_id | start_date |  end_date  | total_price | rating |         comment          
+------------+------------+------------+-------------+--------+--------------------------
+        301 | 2026-07-13 | 2026-07-15 |    12000.00 |      5 | Scenario 3 commit review
+(1 row)
+
+ result |                 explanation                  
+--------+----------------------------------------------
+ PASS   | После полного отката состояние не изменилось
+(1 row)
+
+
+3.3 SAVEPOINT + partial rollback
+BEGIN
+SAVEPOINT
+[Ожидаемая ошибка 3.3] Конфликтный перенос откатываем только до SAVEPOINT
+ROLLBACK
+UPDATE 1
+CALL
+COMMIT
+[Проверка 3.3] После SAVEPOINT бронь должна быть перенесена на новый валидный интервал
+ booking_id | start_date |  end_date  | total_price | rating |                    comment                    
+------------+------------+------------+-------------+--------+-----------------------------------------------
+        301 | 2026-07-21 | 2026-07-23 |    12000.00 |      4 | Scenario 3 review after rollback to savepoint
+(1 row)
+
+ result |                              explanation                              
+--------+-----------------------------------------------------------------------
+ PASS   | После отката к SAVEPOINT выполнен корректный перенос и обновлен отзыв
+(1 row)
+

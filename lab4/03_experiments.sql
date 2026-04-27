@@ -1,3 +1,4 @@
+-- Каждый сценарий ниже запускается в формате "до индекса / после индекса".
 \set ON_ERROR_STOP on
 \pset pager off
 \timing on
@@ -30,7 +31,7 @@ DROP INDEX IF EXISTS idx_lab4_bookings_created_wide;
 
 \echo
 \echo [Сценарий 1] Сложный фильтр
-\echo Гипотеза: составной B-tree индекс по (estate_id, created_at) сократит чтение для условия "точное совпадение + диапазон".
+\echo Гипотеза: составной  индекс по (estate_id, created_at) сократит чтение для условия "точное совпадение + диапазон".
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT
     b.id,
@@ -46,6 +47,7 @@ WHERE b.estate_id = 12020
 CREATE INDEX idx_lab4_bookings_estate_created
     ON bookings (estate_id, created_at);
 
+-- После создания индекса даем планировщику свежую статистику.
 ANALYZE bookings;
 
 SELECT
